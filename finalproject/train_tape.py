@@ -1,45 +1,62 @@
-from data_loading import get_dataset, convert_labels_to_grid_tf
-from finalproject.data_loading import load_all_labels
-from finalproject.loss import loss_fn
-from finalproject.utils import annotate_image
-from network import Net
 import tensorflow as tf
-from PIL import Image
+from tensorflow.keras.preprocessing.image import load_img
+from tensorflow.python.data import AUTOTUNE
+
+from finalproject.data_loading import process_path
+from finalproject.loss import loss_fn
+from finalproject.network import Net
+
 
 grid_h = 1
 grid_w = 1
-batch_size = 8
-epochs = 10
-learning_rate = 1e-5
+batch_size = 6
+epochs = 20
+learning_rate = 1e-4
 
-# Load data
-labels_dict = load_all_labels("datasets_yolo")
-grid = convert_labels_to_grid_tf(labels_dict, grid_h, grid_w)
-dataset = get_dataset("datasets/images", grid, batch_size)
+list_ds = tf.data.Dataset.list_files('banana-detection/bananas_train/images/*.png', shuffle=False)
+train_ds = list_ds.map(process_path, num_parallel_calls=AUTOTUNE)
+train_ds = train_ds.batch(batch_size).prefetch(buffer_size=AUTOTUNE)
 
-# Initialize model
+val_list_ds = tf.data.Dataset.list_files('banana-detection/bananas_val/images/*.png', shuffle=False)
+val_ds = val_list_ds.map(process_path, num_parallel_calls=AUTOTUNE)
+val_ds = val_ds.batch(batch_size).prefetch(buffer_size=AUTOTUNE)
+
 network = Net()
+network.build(input_shape=(None, 256, 256, 3))
+network.load_weights('saved_model/my_checkpoint.weights.h5')
 
-# Optimizer
 optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
 
-# Training loop
 for epoch in range(epochs):
+    if epoch % 5 == 0 and epoch != 0:
+        learning_rate *= 0.5
+        optimizer.learning_rate = learning_rate
+        print(f"Learning rate adjusted to {learning_rate}")
     print(f"Epoch {epoch + 1}/{epochs}")
-    for step, (images, targets) in enumerate(dataset):
+    epoch_loss_avg = tf.keras.metrics.Mean()
+
+    for step, (images, labels, _) in enumerate(train_ds):
         with tf.GradientTape() as tape:
             predictions = network(images, training=True)
-            loss_value = loss_fn(targets, predictions)
+            loss_value = loss_fn(labels, predictions)
 
         gradients = tape.gradient(loss_value, network.trainable_variables)
         optimizer.apply_gradients(zip(gradients, network.trainable_variables))
 
+        epoch_loss_avg.update_state(loss_value)
+
         if step % 1 == 0:
             print(f"Step {step}, Loss: {loss_value.numpy():.4f}")
 
+    val_loss_avg = tf.keras.metrics.Mean()
+    for step, (images, labels, _) in enumerate(val_ds):
+        predictions = network(images, training=False)
+        val_loss = loss_fn(labels, predictions)
+        val_loss_avg.update_state(val_loss)
 
 
 
-# Save the trained model
-network.save("saved_model/airplane_detector.keras")
+    print(f"Epoch {epoch + 1} Average Loss: {epoch_loss_avg.result().numpy():.4f}")
+    print(f"Epoch {epoch + 1} Validation Loss: {val_loss_avg.result().numpy():.4f}")
+    network.save_weights('saved_model/my_checkpoint.weights.h5')
 
