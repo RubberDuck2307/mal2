@@ -6,7 +6,6 @@ from finalproject.data_loading import process_path
 from finalproject.loss import loss_fn
 from finalproject.network import Net
 
-
 grid_h = 1
 grid_w = 1
 batch_size = 6
@@ -34,16 +33,20 @@ for epoch in range(epochs):
         print(f"Learning rate adjusted to {learning_rate}")
     print(f"Epoch {epoch + 1}/{epochs}")
     epoch_loss_avg = tf.keras.metrics.Mean()
+    pos_losses = tf.keras.metrics.Mean()
+    dim_losses = tf.keras.metrics.Mean()
 
     for step, (images, labels, _) in enumerate(train_ds):
         with tf.GradientTape() as tape:
             predictions = network(images, training=True)
-            loss_value = loss_fn(labels, predictions)
+            loss_value, pos_loss, dim_loss = loss_fn(labels, predictions)
 
         gradients = tape.gradient(loss_value, network.trainable_variables)
         optimizer.apply_gradients(zip(gradients, network.trainable_variables))
 
         epoch_loss_avg.update_state(loss_value)
+        pos_losses.update_state(pos_loss)
+        dim_losses.update_state(dim_loss)
 
         if step % 1 == 0:
             print(f"Step {step}, Loss: {loss_value.numpy():.4f}")
@@ -54,9 +57,9 @@ for epoch in range(epochs):
         val_loss = loss_fn(labels, predictions)
         val_loss_avg.update_state(val_loss)
 
-
-
     print(f"Epoch {epoch + 1} Average Loss: {epoch_loss_avg.result().numpy():.4f}")
+    print(f'Epoch {epoch + 1} Position Loss: {pos_losses.result().numpy():.4f}')
+    print(f"Epoch {epoch + 1} Dimension Loss: {dim_losses.result().numpy():.4f}")
     print(f"Epoch {epoch + 1} Validation Loss: {val_loss_avg.result().numpy():.4f}")
-    network.save_weights('saved_model/my_checkpoint.weights.h5')
 
+    network.save_weights('saved_model/my_checkpoint.weights.h5')

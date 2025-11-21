@@ -2,34 +2,37 @@ import tensorflow as tf
 
 
 def loss_fn(labels, p):
-    iou = get_iou_grid(p, labels)
+    try:
+        iou = get_iou_grid(p, labels)
 
-    object_mask = labels[..., 4] > 0
-    iou_filtered = iou[tf.expand_dims(tf.expand_dims(object_mask, -1), -1)]
+        object_mask = labels[..., 4] > 0
+        iou_filtered = iou[tf.expand_dims(tf.expand_dims(object_mask, -1), -1)]
 
-    p_filtered = p[object_mask]
-    labels_filtered = labels[object_mask]
+        p_filtered = p[object_mask]
+        labels_filtered = labels[object_mask]
 
-    x_losses = tf.keras.losses.MeanSquaredError()(labels_filtered[..., 0], p_filtered[..., 0])
-    y_losses = tf.keras.losses.MeanSquaredError()(labels_filtered[..., 1], p_filtered[..., 1])
+        x_losses = tf.keras.losses.MeanSquaredError()(labels_filtered[..., 0], p_filtered[..., 0])
+        y_losses = tf.keras.losses.MeanSquaredError()(labels_filtered[..., 1], p_filtered[..., 1])
 
-    pos_losses = x_losses + y_losses
+        pos_losses = x_losses + y_losses
 
-    h_loss = tf.keras.losses.MeanSquaredError()(labels_filtered[..., 2], p_filtered[..., 2])
-    w_loss = tf.keras.losses.MeanSquaredError()(labels_filtered[..., 3], p_filtered[..., 3])
-    size_losses = h_loss + w_loss
+        h_loss = tf.keras.losses.MeanSquaredError()(labels_filtered[..., 2], p_filtered[..., 2])
+        w_loss = tf.keras.losses.MeanSquaredError()(labels_filtered[..., 3], p_filtered[..., 3])
+        size_losses = h_loss + w_loss
 
-    confidence_object_loss = tf.keras.losses.BinaryCrossentropy()(labels_filtered[..., 4],
-                                                                  iou_filtered)
+        confidence_object_loss = tf.keras.losses.BinaryCrossentropy()(labels_filtered[..., 4],
+                                                                      iou_filtered)
 
-    no_object_mask = labels[..., 4] == 0
-    p_noobj = p[no_object_mask]
-    labels_noobj = labels[no_object_mask]
-    confidence_no_object_loss = tf.keras.losses.BinaryCrossentropy()(labels_noobj[..., 4],
-                                                                     p_noobj[..., 4])
+        no_object_mask = labels[..., 4] == 0
+        p_noobj = p[no_object_mask]
+        labels_noobj = labels[no_object_mask]
+        confidence_no_object_loss = tf.keras.losses.BinaryCrossentropy()(labels_noobj[..., 4],
+                                                                         p_noobj[..., 4])
 
-    total_loss = pos_losses + size_losses + confidence_object_loss
-    return total_loss
+        total_loss = pos_losses + size_losses
+        return total_loss, pos_losses, size_losses
+    except:
+        return tf.constant(0.0), tf.constant(0.0), tf.constant(0.0)
 
 
 def get_iou_grid(boxes1_b, boxes2_b):
