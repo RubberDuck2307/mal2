@@ -105,7 +105,7 @@ def process_path(file_path):
     img = tf.io.read_file(file_path)
     img = decode_img(img)
     boxes = tf.py_function(func=get_label, inp=[file_path], Tout=tf.float32)
-    boxes = tf.py_function(func=convert_labels_to_grid_tf, inp=[boxes], Tout=tf.float32)
+    # boxes = tf.py_function(func=convert_labels_to_grid_tf, inp=[boxes], Tout=tf.float32)
     return img, boxes, file_path
 
 

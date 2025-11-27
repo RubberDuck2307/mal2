@@ -10,7 +10,7 @@ grid_h = 1
 grid_w = 1
 batch_size = 6
 epochs = 20
-learning_rate = 1e-5
+learning_rate = 1e-4
 
 list_ds = tf.data.Dataset.list_files('finalproject/banana-detection/bananas_train/images/*.png', shuffle=False)
 train_ds = list_ds.map(process_path, num_parallel_calls=AUTOTUNE)
@@ -23,18 +23,18 @@ val_ds = val_ds.batch(batch_size).prefetch(buffer_size=AUTOTUNE)
 network = Net()
 network.build(input_shape=(None, 256, 256, 3))
 
-optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
+optimizer = tf.keras.optimizers.AdamW(learning_rate=learning_rate,  weight_decay=1e-4)
 
 
 patience = 2
 best_val_loss = float('inf')
 patience_counter = 0
 
-network.load_weights('finalproject/saved_model/epoch_6.weights.h5')
+# network.load_weights('finalproject/saved_model/best_model.weights.h5')
 
 for epoch in range(epochs):
 
-    if epoch == 3 or epoch == 7 or epoch == 11:
+    if epoch == 3 or epoch == 8:
         learning_rate *= 0.1
         optimizer.learning_rate = learning_rate
         print(f"Learning rate adjusted to {learning_rate}")
@@ -47,7 +47,7 @@ for epoch in range(epochs):
     for step, (images, labels, _) in enumerate(train_ds):
         with tf.GradientTape() as tape:
             predictions = network(images, training=True)
-            loss_value, pos_loss, dim_loss = loss_fn(labels, predictions)
+            loss_value, pos_loss, dim_loss = loss_fn(labels[:,0,:], predictions)
 
         gradients = tape.gradient(loss_value, network.trainable_variables)
         optimizer.apply_gradients(zip(gradients, network.trainable_variables))
