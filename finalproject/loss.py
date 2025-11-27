@@ -29,9 +29,10 @@ def loss_fn(labels, p):
         confidence_no_object_loss = tf.keras.losses.BinaryCrossentropy()(labels_noobj[..., 4],
                                                                          p_noobj[..., 4])
 
-        total_loss = pos_losses + size_losses
+        total_loss = pos_losses * 3 + size_losses
         return total_loss, pos_losses, size_losses
-    except:
+    except Exception as e:
+
         return tf.constant(0.0), tf.constant(0.0), tf.constant(0.0)
 
 
@@ -85,9 +86,6 @@ def get_iou_grid(boxes1_b, boxes2_b):
     return iou
 
 
-import tensorflow as tf
-
-
 def from_grid_to_coordinates(p):
     p = tf.identity(p)
     shape = tf.shape(p)
@@ -117,7 +115,7 @@ def from_grid_to_coordinates(p):
 
     output = combined + padded
 
-    output = output[output[...,4] > 0.2]
+    output = output[output[...,4] >= 0]
     output = cxcywh_to_xyxy(output)
     return output
 
@@ -129,3 +127,4 @@ def cxcywh_to_xyxy(boxes):
     x2 = cx + w / 2
     y2 = cy + h / 2
     return tf.concat([x1, y1, x2, y2, confi], axis=-1)
+
