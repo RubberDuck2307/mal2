@@ -7,13 +7,11 @@ from finalproject.data_loading import process_path
 from finalproject.loss import loss_fn
 from finalproject.network import Net
 
-grid_h = 1
-grid_w = 1
-batch_size = 6
-epochs = 20
-learning_rate = 1e-4
+batch_size = 1
+epochs = 100
+learning_rate = 1e-2
 
-list_ds = tf.data.Dataset.list_files('banana-detection/augmented/images/*.png', shuffle=False)
+list_ds = tf.data.Dataset.list_files('banana-detection/single/*.png', shuffle=False)
 train_ds = list_ds.map(process_path, num_parallel_calls=AUTOTUNE)
 train_ds = train_ds.batch(batch_size).prefetch(buffer_size=AUTOTUNE)
 
@@ -33,8 +31,7 @@ best_val_loss = float('inf')
 patience_counter = 0
 
 for epoch in range(epochs):
-
-    if epoch % 2 == 0 and epoch != 0:
+    if epoch in [20,50] and epoch != 0:
         learning_rate *= 0.5
         optimizer.learning_rate = learning_rate
         print(f"Learning rate adjusted to {learning_rate}")
@@ -49,38 +46,38 @@ for epoch in range(epochs):
             predictions = network(images, training=True)
             loss_value, pos_loss, dim_loss = loss_fn(labels, predictions)
 
-        gradients = tape.gradient(loss_value, network.trainable_variables)
-        optimizer.apply_gradients(zip(gradients, network.trainable_variables))
+            gradients = tape.gradient(loss_value, network.trainable_variables)
+            optimizer.apply_gradients(zip(gradients, network.trainable_variables))
 
         epoch_loss_avg.update_state(loss_value)
         pos_losses.update_state(pos_loss)
         dim_losses.update_state(dim_loss)
 
     val_loss_avg = tf.keras.metrics.Mean()
-    for step, (images, labels, _) in enumerate(val_ds):
-        predictions = network(images, training=False)
-        val_loss, _, _ = loss_fn(labels, predictions)
-        val_loss_avg.update_state(val_loss)
-
-    val_loss_value = val_loss_avg.result().numpy()
+    # for step, (images, labels, _) in enumerate(val_ds):
+    #     predictions = network(images, training=False)
+    #     val_loss, _, _ = loss_fn(labels, predictions)
+    #     val_loss_avg.update_state(val_loss)
+    #
+    # val_loss_value = val_loss_avg.result().numpy()
 
     print(f"Epoch {epoch + 1} Average Loss: {epoch_loss_avg.result().numpy():.4f}")
     print(f"Epoch {epoch + 1} Position Loss: {pos_losses.result().numpy():.4f}")
     print(f"Epoch {epoch + 1} Dimension Loss: {dim_losses.result().numpy():.4f}")
-    print(f"Epoch {epoch + 1} Validation Loss: {val_loss_value:.4f}")
-
-
-    if val_loss_value < best_val_loss:
-        print("Validation loss improved, saving best model.")
-        best_val_loss = val_loss_value
-        patience_counter = 0
-
-        network.save_weights('saved_model/best_model.weights.h5')
-
-    else:
-        patience_counter += 1
-        print(f"No improvement. Patience counter: {patience_counter}/{patience}")
-
-        if patience_counter >= patience:
-            print("Early stopping triggered!")
-            break
+    # print(f"Epoch {epoch + 1} Validation Loss: {val_loss_value:.4f}")
+    #
+    #
+    # if val_loss_value < best_val_loss:
+    #     print("Validation loss improved, saving best model.")
+    #     best_val_loss = val_loss_value
+    #     patience_counter = 0
+    #
+    network.save_weights('saved_model/best_model.weights.h5')
+    #
+    # else:
+    #     patience_counter += 1
+    #     print(f"No improvement. Patience counter: {patience_counter}/{patience}")
+    #
+    #     if patience_counter >= patience:
+    #         print("Early stopping triggered!")
+    #         break

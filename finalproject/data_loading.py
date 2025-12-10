@@ -1,7 +1,6 @@
-import tensorflow as tf
 import math
-from finalproject.loss import cxcywh_to_xyxy
 
+import tensorflow as tf
 from tensorflow.python.data import AUTOTUNE
 
 
@@ -53,12 +52,11 @@ def look_up_labels(file_names, labels):
     return [labels[k] for k in file_names]
 
 
-def convert_labels_to_grid_tf(labels, grid_h=1, grid_w=1):
+def convert_labels_to_grid_tf(labels, grid_h=2, grid_w=2):
     Y = tf.zeros((grid_h, grid_w, 5), dtype=tf.float32)
 
-    size = tf.shape(labels)[0]
-    if size == 0:
-        return Y
+    size = 1
+
     for i in range(size):
         try:
             obj = labels[i]
@@ -105,7 +103,7 @@ def process_path(file_path):
     img = tf.io.read_file(file_path)
     img = decode_img(img)
     boxes = tf.py_function(func=get_label, inp=[file_path], Tout=tf.float32)
-    # boxes = tf.py_function(func=convert_labels_to_grid_tf, inp=[boxes], Tout=tf.float32)
+    boxes = tf.py_function(func=convert_labels_to_grid_tf, inp=[boxes], Tout=tf.float32)
     return img, boxes, file_path
 
 
