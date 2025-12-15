@@ -25,11 +25,11 @@ class Net(tf.keras.Model):
         ])
 
         self.out = tf.keras.Sequential([
-            layers.Conv2D(128, kernel_size=4, strides=(3,3), padding="valid", activation="gelu"),
+            layers.Conv2D(128, kernel_size=6, padding="valid", activation="gelu"),
             layers.Dropout(0.2),
             layers.Conv2D(64, kernel_size=2, padding="valid", activation="gelu"),
             layers.Dropout(0.2),
-            layers.Conv2D(1 * 5, kernel_size=1, padding="valid", activation="sigmoid")
+            layers.Conv2D(1 * 5, kernel_size=2, padding="valid", activation="sigmoid")
         ])
 
 
