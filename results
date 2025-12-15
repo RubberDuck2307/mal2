@@ -1,1 +1,5 @@
 {'map': tensor(0.0801), 'map_50': tensor(0.3036), 'map_75': tensor(0.0158), 'map_small': tensor(0.0801), 'map_medium': tensor(-1.), 'map_large': tensor(-1.), 'mar_1': tensor(0.1590), 'mar_10': tensor(0.1590), 'mar_100': tensor(0.1590), 'mar_small': tensor(0.1590), 'mar_medium': tensor(-1.), 'mar_large': tensor(-1.), 'map_per_class': tensor(-1.), 'mar_100_per_class': tensor(-1.), 'classes': tensor(1, dtype=torch.int32)}
+
+different kernel size detection head
+
+'map': tensor(0.0303), 'map_50': tensor(0.1638), 'map_75': tensor(0.0030), 'map_small': tensor(0.0303), 'map_medium': tensor(-1.), 'map_large': tensor(-1.), 'mar_1': tensor(0.0980), 'mar_10': tensor(0.0980), 'mar_100': tensor(0.0980), 'mar_small': tensor(0.0980), 'mar_medium': tensor(-1.), 'mar_large': tensor(-1.), 'map_per_class': tensor(-1.), 'mar_100_per_class': tensor(-1.), 'classes': tensor(1, dtype=torch.int32)}
