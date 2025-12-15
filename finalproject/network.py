@@ -17,11 +17,11 @@ class Net(tf.keras.Model):
         super(Net, self).__init__()
 
         self.conv_blks = models.Sequential([
-            layers.MaxPooling2D(pool_size=(2, 2), strides=2),
             vgg_block(2, 32),
             vgg_block(2, 64),
             vgg_block(2, 128),
             vgg_block(2, 256),
+            vgg_block(2, 512),
         ])
 
         self.out = tf.keras.Sequential([
@@ -31,14 +31,7 @@ class Net(tf.keras.Model):
             layers.Dropout(0.2),
             layers.Conv2D(1 * 5, kernel_size=2, padding="valid", activation="sigmoid")
         ])
-        #
-        # self.out_single = tf.keras.Sequential()
-        # self.out_single.add(layers.InputLayer(input_shape=(7, 7, 256)))
-        # self.out_single.add(layers.Flatten())
-        # self.out_single.add(layers.Dense(7 * 7 * 5, activation="gelu"))
-        # self.out_single.add(layers.Dense(7 * 7 * 5, activation="gelu"))
-        # self.out_single.add(layers.Dense(5, activation="sigmoid"))
-        # self.out_single.add(layers.Reshape((1, 1, 5)))
+
 
     def build(self, input_shape):
         self.conv_blks.build(input_shape)

@@ -34,10 +34,10 @@ patience_counter = 0
 
 for epoch in range(epochs):
 
-    if epoch == 3 or epoch == 8:
-        learning_rate *= 0.1
-        optimizer.learning_rate = learning_rate
-        print(f"Learning rate adjusted to {learning_rate}")
+    # if epoch == 10 :
+    #     learning_rate *= 0.1
+    #     optimizer.learning_rate = learning_rate
+    #     print(f"Learning rate adjusted to {learning_rate}")
 
     print(f"Epoch {epoch + 1}/{epochs}")
     epoch_loss_avg = tf.keras.metrics.Mean()
@@ -51,12 +51,17 @@ for epoch in range(epochs):
 
         gradients = tape.gradient(loss_value, network.trainable_variables)
         optimizer.apply_gradients(zip(gradients, network.trainable_variables))
+        max_grad = max([tf.reduce_max(tf.abs(g)) for g in gradients if g is not None])
+
+        # Threshold can be adjusted depending on your model
+        if max_grad < 1e-7:
+            tf.print("⚠️ Warning: Possible vanishing gradients detected! Max grad =", max_grad)
 
         epoch_loss_avg.update_state(loss_value)
         pos_losses.update_state(pos_loss)
         dim_losses.update_state(dim_loss)
 
-        if step % 1 == 0:
+        if step % 10 == 0:
             print(f"Step {step}, Loss: {loss_value.numpy():.4f}")
 
     val_loss_avg = tf.keras.metrics.Mean()
