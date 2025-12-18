@@ -52,14 +52,14 @@ with tf.device('/CPU:0'):
     for i, (images, labels, file_path) in tqdm(enumerate(val_ds)):
         prediction = model.predict(images)
         prediction = from_grid_to_coordinates(prediction)
-        # if i % 5 == 0:
-        #     img = PIL.Image.open(file_path[0].numpy().decode('utf-8'))
-        #     img = annotate_image(img, targets=tf.expand_dims(prediction, 0), scores=tf.constant([0]), labels=tf.constant([0]),
-        #                          normalized=True)
-        #     plt.figure(figsize=(4, 4), facecolor='black')
-        #     plt.imshow(img)
-        #     plt.axis('off')
-        #     plt.show()
+        if i % 5 == 0:
+            img = PIL.Image.open(file_path[0].numpy().decode('utf-8'))
+            img = annotate_image(img, targets=tf.expand_dims(prediction, 0), scores=tf.constant([0]), labels=tf.constant([0]),
+                                 normalized=True)
+            plt.figure(figsize=(4, 4), facecolor='black')
+            plt.imshow(img)
+            plt.axis('off')
+            plt.show()
         eval(ap, prediction[0:4], cxcywh_to_xyxy(labels[0][0]))
 
     print(ap.compute())

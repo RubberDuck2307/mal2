@@ -2,12 +2,12 @@ import tensorflow as tf
 from tensorflow.keras import layers, models
 
 
-def vgg_block(num_convs, out_channels, dropout_rate=0.2):
+def vgg_block(num_convs, out_channels):
     block = tf.keras.Sequential()
     for _ in range(num_convs):
         block.add(layers.Conv2D(out_channels, kernel_size=3, padding="same"))
         block.add(layers.BatchNormalization())
-        block.add(layers.LeakyReLU())
+        block.add(layers.Activation("gelu"))
     block.add(layers.MaxPooling2D(pool_size=(2, 2), strides=2))
     return block
 

@@ -10,9 +10,9 @@ grid_h = 1
 grid_w = 1
 batch_size = 6
 epochs = 20
-learning_rate = 1e-4
+learning_rate = 1e-5
 
-list_ds = tf.data.Dataset.list_files('finalproject/banana-detection/bananas_train/images/*.png', shuffle=False)
+list_ds = tf.data.Dataset.list_files('finalproject/banana-detection/augmented/images/*.png', shuffle=False)
 train_ds = list_ds.map(process_path, num_parallel_calls=AUTOTUNE)
 train_ds = train_ds.batch(batch_size).prefetch(buffer_size=AUTOTUNE)
 
@@ -26,11 +26,11 @@ network.build(input_shape=(None, 256, 256, 3))
 optimizer = tf.keras.optimizers.AdamW(learning_rate=learning_rate,  weight_decay=1e-4)
 
 
-patience = 2
+patience = 10
 best_val_loss = float('inf')
 patience_counter = 0
 
-# network.load_weights('finalproject/saved_model/best_model.weights.h5')
+network.load_weights('finalproject/saved_model/best_model.weights.h5')
 
 for epoch in range(epochs):
 
