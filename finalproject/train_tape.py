@@ -30,8 +30,6 @@ patience = 10
 best_val_loss = float('inf')
 patience_counter = 0
 
-network.load_weights('finalproject/saved_model/best_model.weights.h5')
-
 for epoch in range(epochs):
 
     # if epoch == 10 :

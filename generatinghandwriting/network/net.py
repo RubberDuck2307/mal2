@@ -31,7 +31,7 @@ class Discriminator(nn.Module):
 class Generator(nn.Module):
     def __init__(self, num_classes):
         super(Generator, self).__init__()
-        self.embedding = nn.Embedding(num_classes, 16)
+        self.embedding = nn.Embedding(num_classes, int(num_classes / 2))
         self.fc = nn.Sequential(nn.LazyLinear(out_features=32 * 2 * 2),
                                 nn.GELU())
         self.main = nn.Sequential(nn.ConvTranspose2d(in_channels=32, out_channels=32, kernel_size=4, stride=1),
