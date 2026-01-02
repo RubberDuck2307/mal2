@@ -1,18 +1,48 @@
-import torch
+import os
+import shutil
+import string
+
 import numpy as np
-import torch.nn.functional as F
+import torch
 import torch.nn as nn
 from matplotlib import pyplot as plt
 from torch import optim
-from tqdm import tqdm
 
 from generatinghandwriting.network.net import Generator, Discriminator
 
+import random
+
+SEED = 42
+
+random.seed(SEED)
+np.random.seed(SEED)
+torch.manual_seed(SEED)
+torch.cuda.manual_seed(SEED)
+torch.cuda.manual_seed_all(SEED)
+
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+
+
 batch_size = 64
 num_channels = 1
-num_classes = 26
+num_classes = 6
 image_size = 28
 latent_dim = 128
+letters = string.ascii_uppercase  # "A" .. "Z"
+
+output_folder = "output"
+run_name = "base"
+save_path = os.path.join(output_folder, run_name)
+
+if (run_name != "output/test") and os.path.exists(run_name):
+    raise ValueError(f"Directory {run_name} already exists!")
+
+if os.path.exists(save_path):
+    shutil.rmtree(save_path)
+
+os.makedirs(save_path)
+
 
 all_letters = np.load('x_letters.npy')
 all_labels = np.load('y_letters.npy')
@@ -20,11 +50,23 @@ all_labels = np.load('y_letters.npy')
 all_letters = all_letters.astype("float32")
 all_letters = torch.Tensor(np.reshape(all_letters, (-1, 28, 28, 1)))
 
-
 all_labels = torch.Tensor(all_labels).long()
 
+letter_mask = all_labels < num_classes
+all_letters = all_letters[letter_mask]
+all_labels = all_labels[letter_mask]
+
 dataset = torch.utils.data.TensorDataset(all_letters, all_labels)
-dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True)
+
+g = torch.Generator()
+g.manual_seed(SEED)
+
+dataloader = torch.utils.data.DataLoader(
+    dataset,
+    batch_size=batch_size,
+    shuffle=True,
+    generator=g
+)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -36,25 +78,21 @@ criterion = nn.BCELoss()
 real_label = 1.
 fake_label = 0.
 
-optimizerD = optim.Adam(D_Net.parameters(), lr=0.5e-4)
+optimizerD = optim.Adam(D_Net.parameters(), lr=1e-4)
 optimizerG = optim.Adam(G_Net.parameters(), lr=1e-4)
 
 fixed_noise = torch.randn(num_classes, latent_dim, device=device)
 
-# Training Loop
-
-# Lists to keep track of progress
 img_list = []
 G_losses = []
 D_losses = []
 iters = 0
-num_epochs = 20
+num_epochs = 30
 print("Starting Training Loop...")
-# For each epoch
-for epoch in range(num_epochs):
-    # For each batch in the dataloader
-    for i, (images, labels) in enumerate(dataloader, 0):
 
+for epoch in range(num_epochs):
+
+    for i, (images, labels) in enumerate(dataloader, 0):
         ############################
         # (1) Update D network: maximize log(D(x)) + log(1 - D(G(z)))
         ###########################
@@ -116,7 +154,7 @@ for epoch in range(num_epochs):
         optimizerG.step()
 
         # Output training stats
-        if i % 50 == 0:
+        if i % 100 == 0:
             print('[%d/%d][%d/%d]\tLoss_D: %.4f\tLoss_G: %.4f\tD(x): %.4f\tD(G(z)): %.4f / %.4f'
                   % (epoch, num_epochs, i, len(dataloader),
                      errD.item(), errG.item(), D_x, D_G_z1, D_G_z2))
@@ -128,20 +166,27 @@ for epoch in range(num_epochs):
         # Check how the generator is doing by saving G's output on fixed_noise
         if (iters % 500 == 0) or ((epoch == num_epochs - 1) and (i == len(dataloader) - 1)):
             with torch.no_grad():
-                output = G_Net(fixed_noise, torch.range(0, 25).to(torch.int64).to(device))
+                output = G_Net(fixed_noise, torch.range(0, num_classes - 1).to(torch.int64).to(device))
                 images = output.reshape(num_classes, 28, 28).cpu()
 
                 fig, axes = plt.subplots(6, 5, figsize=(6, 6))
 
                 for i, ax in enumerate(axes.flat):
-                    if (i > 25):
+                    if (i == num_classes ):
                         break
+                    ax.set_title(letters[i], fontsize=10, pad=2)
                     ax.imshow(images[i], cmap="gray")
                     ax.axis("off")
 
                 plt.tight_layout()
-                plt.show()
+                fig.savefig(f"{save_path}/epoch_{epoch}_iter_{iters}.png")
+                plt.close(fig)
 
         iters += 1
-    torch.save(G_Net.state_dict(), f"generator_{epoch}.pth")
+    with open(f"{save_path}/stats", "a") as f:
+        f.write('[%d/%d][%d/%d]\tLoss_D: %.4f\tLoss_G: %.4f\tD(x): %.4f\tD(G(z)): %.4f / %.4f \n'
+          % (epoch, num_epochs, i, len(dataloader),
+             errD.item(), errG.item(), D_x, D_G_z1, D_G_z2))
 
+
+    torch.save(G_Net.state_dict(), f"generator_{epoch}.pth")
